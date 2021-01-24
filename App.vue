@@ -1,0 +1,23 @@
+<template>
+  <div>
+    <router-link to="/" class="to-home">
+      <i class="material-icons">home</i>
+    </router-link>
+    <router-view/>
+  </div>
+</template>
+
+<script>
+export default {
+  created () {
+    console.log('router : ' + this.$router)
+    console.log('route : ' + this.$route)
+  }
+}
+</script>
+
+<style lang="css">
+  .to-home.router-link-exact-active {
+    display: none;
+  }
+</style>
