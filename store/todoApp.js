@@ -1,8 +1,11 @@
-import _cloneDeep from 'lodash/cloneDeep'
+import Vue from 'vue'
 import lowdb from 'lowdb'
-import LocalStorage from 'lowdb/adapters/LocalStorage'
+import _cloneDeep from 'lodash/cloneDeep'
+import _findIndex from 'lodash/findIndex'
 import _find from 'lodash/find'
 import _assign from 'lodash/assign'
+import _forEachRight from 'lodash/forEachRight'
+import LocalStorage from 'lowdb/adapters/LocalStorage'
 import cryptoRandomString from 'crypto-random-string'
 
 export default {
@@ -46,6 +49,12 @@ export default {
         .assign(value) // todo 데이터를 전달받은 객체 값으로 갱신
         .write()
     },
+    deleteDB (state, todo) {
+      state.db
+        .get('todos')
+        .remove({ id: todo.id })
+        .write()
+    },
     assignTodos (state, todos) {
       state.todos = todos
     },
@@ -55,6 +64,12 @@ export default {
     pushTodo (state, newTodo) {
       // 화면에 쓰이는 데이터 추가
       state.todos.push(newTodo)
+    },
+    deleteTodo (state, foundIndex) {
+      Vue.delete(state.todos, foundIndex)
+    },
+    updateTodo (state, { todo, key, value }) {
+      todo[key] = value
     }
   },
   // Methods
@@ -99,5 +114,61 @@ export default {
     commit('updateDB', { todo, value })
     const foundTodo = _find(state.todos, { id: todo.id })
     commit('assignTodo', { foundTodo, value })
+  },
+  deleteTodo ({ state, commit }, todo) {
+    // Delete DB
+    commit('deleteDB', todo)
+
+    const foundIndex = _findIndex(state.todos, { id: todo.id })
+
+    // Delete Client Todo
+    commit('deleteTodo', foundIndex)
+  },
+  completeAll ({ state, commit }, checked) {
+    // DB commit
+    const newTodos = state.db
+      .get('todos')
+      .forEach(todo => {
+        // todo.done = checked
+        commit('updateTodo', {
+          todo,
+          key: 'done',
+          value: checked
+        })
+      })
+      .write()
+    // Local todos
+    state.todos = _cloneDeep(newTodos)
+  },
+  clearCompleted ({ state, dispatch }) {
+    // 배열의 요소를 일괄적으로 제거할 땐, 해당 배열의 뒤부터 제거해야 한다.
+
+    // 정상적으로 동작하지 않는 코드
+    // this.todos.forEach(todo => {
+    //   if (todo.done) {
+    //     this.deleteTodo(todo)
+    //   }
+    // })
+
+    // 뒤부터 제거하는 코드(네이티브 코드)
+    // this.todos
+    //   .reduce((list, todo, index) => {
+    //     if (todo.done) {
+    //       list.push(index)
+    //     }
+    //     return list
+    //   }, [])
+    //   .reverse()
+    //   .forEach(index => {
+    //     this.deleteTodo(this.todos[index])
+    //   })
+
+    // 뒤부터 제거하는 코드(라이브러리 활용 - lodash)
+    _forEachRight(state.todos, todo => {
+      if (todo.done) {
+        // this.deleteTodo(todo)
+        dispatch('deleteTodo', todo)
+      }
+    })
   }
 }

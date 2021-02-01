@@ -29,7 +29,10 @@ export default {
         return false
       }
       // 부모 컴포넌트의 createTodo 메서드를 실행한다.
-      this.$emit('create-todo', this.title)
+      // this.$emit('create-todo', this.title)
+
+      // store에 있는 dispatch를 호출하도록 수정
+      this.$store.dispatch('todoApp/createTodo', this.title)
       this.title = ''
     }
   }
