@@ -56,7 +56,7 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from 'vuex'
+import { mapState, mapGetters, mapMutations, mapActions } from 'vuex'
 import TodoCreator from '~/components/TodoCreator'
 import TodoItem from '~/components/TodoItem'
 
@@ -75,19 +75,9 @@ export default {
     ...mapGetters('todoApp', [
       'total',
       'activeCount',
-      'completedCount'
+      'completedCount',
+      'filteredTodos'
     ]),
-    filteredTodos () {
-      switch (this.$route.params.id) {
-        case 'all':
-        default:
-          return this.todos
-        case 'active': // 해야 할 항목
-          return this.todos.filter(todo => !todo.done)
-        case 'completed': // 완료된 항목
-          return this.todos.filter(todo => todo.done)
-      }
-    },
     allDone: {
       get () {
         return this.total === this.completedCount && this.total > 0
@@ -97,8 +87,40 @@ export default {
       }
     }
   },
+  watch: {
+    $route () {
+      // state.filter = this.$route.params.id
+      // helpers의 도움을 받지 않는 경우
+      // this.$store.commit('todoApp/updateFilter', this.$route.params.id)
+      // helpers의 도움을 받는 경우
+      this.updateFilter(this.$route.params.id)
+    }
+  },
   created () {
     this.initDB()
+  },
+  methods: {
+    ...mapActions([ // index.js에 작성한 actions를 사용하려는 경우
+      'testFunction'
+    ]),
+    ...mapMutations('todoApp', [
+      'updateFilter'
+    ]),
+    ...mapActions('todoApp', [
+      'initDB',
+      'completeAll',
+      'clearCompleted'
+    ]),
+    scrollToTop () {
+      scrollTo(0, 0, {
+        ease: 'linear'
+      })
+    },
+    scrollToBottom () {
+      scrollTo(0, document.body.scrollHeight, {
+        ease: 'linear'
+      })
+    }
   }
 }
 </script>

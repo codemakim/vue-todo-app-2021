@@ -13,7 +13,8 @@ export default {
   // Data
   state: () => ({
     db: null,
-    todos: []
+    todos: [],
+    filter: 'all'
   }),
   // Computed
   getters: {
@@ -25,6 +26,17 @@ export default {
     },
     completedCount (state, getters) {
       return getters.total - getters.activeCount
+    },
+    filteredTodos (state) {
+      switch (state.filter) {
+        case 'all':
+        default:
+          return state.todos
+        case 'active': // 해야 할 항목
+          return state.todos.filter(todo => !todo.done)
+        case 'completed': // 완료된 항목
+          return state.todos.filter(todo => todo.done)
+      }
     }
   },
   // Methods
@@ -70,6 +82,9 @@ export default {
     },
     updateTodo (state, { todo, key, value }) {
       todo[key] = value
+    },
+    updateFilter (state, filter) {
+      state.filter = filter
     }
   },
   // Methods
@@ -108,67 +123,73 @@ export default {
       }
       commit('createDB', newTodo)
       commit('pushTodo', newTodo)
-    }
-  },
-  updateTodo ({ state, commit }, { todo, value }) {
-    commit('updateDB', { todo, value })
-    const foundTodo = _find(state.todos, { id: todo.id })
-    commit('assignTodo', { foundTodo, value })
-  },
-  deleteTodo ({ state, commit }, todo) {
-    // Delete DB
-    commit('deleteDB', todo)
+    },
+    updateTodo ({ state, commit }, { todo, value }) {
+      commit('updateDB', { todo, value })
+      const foundTodo = _find(state.todos, { id: todo.id })
+      commit('assignTodo', { foundTodo, value })
+    },
+    deleteTodo ({ state, commit }, todo) {
+      // Delete DB
+      commit('deleteDB', todo)
 
-    const foundIndex = _findIndex(state.todos, { id: todo.id })
+      const foundIndex = _findIndex(state.todos, { id: todo.id })
 
-    // Delete Client Todo
-    commit('deleteTodo', foundIndex)
-  },
-  completeAll ({ state, commit }, checked) {
-    // DB commit
-    const newTodos = state.db
-      .get('todos')
-      .forEach(todo => {
-        // todo.done = checked
-        commit('updateTodo', {
-          todo,
-          key: 'done',
-          value: checked
+      // Delete Client Todo
+      commit('deleteTodo', foundIndex)
+    },
+    completeAll ({ state, commit }, checked) {
+      // DB commit
+      const newTodos = state.db
+        .get('todos')
+        .forEach(todo => {
+          // todo.done = checked
+          commit('updateTodo', {
+            todo,
+            key: 'done',
+            value: checked
+          })
         })
+        .write()
+      // Local todos
+
+      // mutations 바깥에서 상태를 바로 변경하려 함. (에러)
+      // state.todos = _cloneDeep(newTodos)
+
+      // 올바른 코드
+      commit('assignTodos', _cloneDeep(newTodos))
+    },
+    clearCompleted ({ state, dispatch }) {
+      // 배열의 요소를 일괄적으로 제거할 땐, 해당 배열의 뒤부터 제거해야 한다.
+
+      // 정상적으로 동작하지 않는 코드
+      // this.todos.forEach(todo => {
+      //   if (todo.done) {
+      //     this.deleteTodo(todo)
+      //   }
+      // })
+
+      // 뒤부터 제거하는 코드(네이티브 코드)
+      // this.todos
+      //   .reduce((list, todo, index) => {
+      //     if (todo.done) {
+      //       list.push(index)
+      //     }
+      //     return list
+      //   }, [])
+      //   .reverse()
+      //   .forEach(index => {
+      //     this.deleteTodo(this.todos[index])
+      //   })
+
+      // 뒤부터 제거하는 코드(라이브러리 활용 - lodash)
+      _forEachRight(state.todos, todo => {
+        if (todo.done) {
+          // this.deleteTodo(todo)
+          dispatch('deleteTodo', todo)
+        }
       })
-      .write()
-    // Local todos
-    state.todos = _cloneDeep(newTodos)
-  },
-  clearCompleted ({ state, dispatch }) {
-    // 배열의 요소를 일괄적으로 제거할 땐, 해당 배열의 뒤부터 제거해야 한다.
-
-    // 정상적으로 동작하지 않는 코드
-    // this.todos.forEach(todo => {
-    //   if (todo.done) {
-    //     this.deleteTodo(todo)
-    //   }
-    // })
-
-    // 뒤부터 제거하는 코드(네이티브 코드)
-    // this.todos
-    //   .reduce((list, todo, index) => {
-    //     if (todo.done) {
-    //       list.push(index)
-    //     }
-    //     return list
-    //   }, [])
-    //   .reverse()
-    //   .forEach(index => {
-    //     this.deleteTodo(this.todos[index])
-    //   })
-
-    // 뒤부터 제거하는 코드(라이브러리 활용 - lodash)
-    _forEachRight(state.todos, todo => {
-      if (todo.done) {
-        // this.deleteTodo(todo)
-        dispatch('deleteTodo', todo)
-      }
-    })
+    }
   }
+
 }

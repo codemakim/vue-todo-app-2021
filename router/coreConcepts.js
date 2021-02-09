@@ -4,7 +4,7 @@ export default {
   namespaced: true,
   state: () => ({
     a: 123,
-    b:[]
+    b: []
   }),
   getters: {
     someGetter1 (state, getters) {

@@ -25,6 +25,12 @@ export default new Vuex.Store({
   // actions: {
 
   // }
+  actions: {
+    testFunction () {
+      // 네임스페이스가 필요 없음.
+      console.log('testFunction Action 실행')
+    }
+  },
   modules: {
     todoApp
   }
